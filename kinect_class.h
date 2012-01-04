@@ -11,6 +11,7 @@
 #include <XnOpenNI.h>
 #include <XnCodecIDs.h>
 #include <XnCppWrapper.h>
+#include <XnPropNames.h>
 #include <iostream>
 											
 
@@ -23,6 +24,7 @@ class kinect_class   {
 			xn::Context g_Context;
 			xn::DepthGenerator g_DepthGenerator;
 			xn::UserGenerator g_UserGenerator;
+			xn::ScriptNode g_scriptNode;
 
 			XnBool g_bNeedPose;
 			XnChar g_strPose[20];
@@ -46,7 +48,8 @@ class kinect_class   {
 
 		static void XN_CALLBACK_TYPE User_NewUser(xn::UserGenerator& generator, XnUserID nId, void* pCookie)
 			{
-				generator.GetPoseDetectionCap().StartPoseDetection("Psi", nId);
+				//generator.GetPoseDetectionCap().StartPoseDetection("Psi", nId);
+				generator.GetSkeletonCap().RequestCalibration(nId, TRUE);
 
 			}
 
@@ -114,11 +117,6 @@ class kinect_class   {
 					{
 						XnChar strError[1024];
 						errors.ToString(strError, 1024);
-						//exit(nRetVal);
-					}
-					else if (nRetVal != XN_STATUS_OK)
-					{
-						//exit(nRetVal);
 					}
 					// Make sure we have all OpenNI nodes we will be needing for this sample
 					xn::NodeInfoList nodes;
@@ -140,37 +138,18 @@ class kinect_class   {
 
 				if (nRetVal != XN_STATUS_OK)
 				{
-					nRetVal = g_UserGenerator.Create(g_Context);
-					//CHECK_RC(nRetVal, "Find user generator");
-					if (nRetVal != XN_STATUS_OK)									
-					{																
-						//exit(nRetVal);												
-					}											
-				}
-				if (!g_UserGenerator.IsCapabilitySupported(XN_CAPABILITY_SKELETON))
-				{
-					//printf("Supplied user generator doesn't support skeleton\n");
-					//exit(1);
+					nRetVal = g_UserGenerator.Create(g_Context);									
 				}
 				g_UserGenerator.RegisterUserCallbacks(kinect_class::User_NewUser, kinect_class::User_LostUser, this, hUserCallbacks);
 				g_UserGenerator.GetSkeletonCap().RegisterCalibrationCallbacks(kinect_class::UserCalibration_CalibrationStart, kinect_class::UserCalibration_CalibrationEnd, this, hCalibrationCallbacks);
 				if (g_UserGenerator.GetSkeletonCap().NeedPoseForCalibration())
 				{
 					g_bNeedPose = TRUE;
-					if (!g_UserGenerator.IsCapabilitySupported(XN_CAPABILITY_POSE_DETECTION))
-					{
-						//printf("Pose required, but not supported\n");
-						//exit(1);
-					}
 					g_UserGenerator.GetPoseDetectionCap().RegisterToPoseCallbacks(kinect_class::UserPose_PoseDetected, NULL, this, hPoseCallbacks);
 					g_UserGenerator.GetSkeletonCap().GetCalibrationPose(g_strPose);
 				}
 				g_UserGenerator.GetSkeletonCap().SetSkeletonProfile(XN_SKEL_PROFILE_ALL);
 				nRetVal = g_Context.StartGeneratingAll();
-				if (nRetVal != XN_STATUS_OK)									
-					{																
-						//exit(nRetVal);												
-					}	
 			}
 
 		/**
